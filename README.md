@@ -92,6 +92,19 @@ Interact with your bot on Telegram using the following commands:
 - `/status` - Check the bot's status and total subscriber count.
 - `/help` - Show available commands.
 
+## ☁️ Deployment (Railway)
+
+To host the bot 24/7 for free using [Railway](https://railway.app/):
+
+1. **Connect GitHub:** Create a new project on Railway and link it to your GitHub repository.
+2. **Environment Variables:** In the **Variables** tab, add:
+   - `TELEGRAM_BOT_TOKEN`: Your bot token from @BotFather.
+   - `DATABASE_PATH`: `/app/data/bit_tracker.db`
+3. **Persistent Storage (Volumes):**
+   - Go to **Settings** -> **Volumes** (or search for **Volume** in the **+ New** menu).
+   - Mount the volume to the path: `/app/data`. This ensures your subscribers and history are saved even when the bot restarts or redeploys.
+4. **Deploy:** Railway will automatically detect the `Procfile` and start the system. You can monitor the progress in the **Logs** tab.
+
 ## 🌐 Live Demo (GitHub Pages)
 
 Since GitHub Pages only hosts static files, a static mock version of the dashboard is provided in the `docs/` folder for demonstration purposes. 
