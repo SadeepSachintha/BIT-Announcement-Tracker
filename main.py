@@ -52,6 +52,22 @@ async def main():
     # Initialize Bot components
     await application.initialize()
     await application.start()
+    
+    # Set bot commands menu
+    from telegram import BotCommand
+    commands = [
+        BotCommand("start", "Subscribe to notifications"),
+        BotCommand("stop", "Unsubscribe from notifications"),
+        BotCommand("latest", "Get the latest announcement"),
+        BotCommand("recent", "Get the 5 most recent announcements"),
+        BotCommand("status", "Check bot and scraper status"),
+        BotCommand("help", "Show available commands")
+    ]
+    try:
+        await application.bot.set_my_commands(commands)
+    except Exception as e:
+        logger.error(f"Failed to set bot commands: {e}")
+
     await application.updater.start_polling()
 
     # Start scraper task
