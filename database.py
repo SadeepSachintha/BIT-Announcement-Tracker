@@ -1,10 +1,15 @@
+import os
 import sqlite3
 from datetime import datetime
 
-DB_NAME = 'bit_tracker.db'
+# Path for the database file - support Railway Volumes
+DB_PATH = os.getenv('DATABASE_PATH', 'data/bit_tracker.db')
+DB_DIR = os.path.dirname(DB_PATH)
 
 def get_db():
-    conn = sqlite3.connect(DB_NAME)
+    if DB_DIR and not os.path.exists(DB_DIR):
+        os.makedirs(DB_DIR, exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 

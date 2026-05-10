@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 class ServerThread(threading.Thread):
     def __init__(self, app):
         threading.Thread.__init__(self)
-        self.server = make_server('0.0.0.0', 5000, app)
+        port = int(os.getenv('PORT', 5000))
+        self.server = make_server('0.0.0.0', port, app)
         self.ctx = app.app_context()
         self.ctx.push()
 
