@@ -12,7 +12,7 @@ A comprehensive tracking system designed to monitor announcements from the Bache
   - Project VLE Site Announcements (`https://project.vle.bit.lk/`)
 - **Telegram Bot Integration (`@BITAnnouncementTracker_bot`):**
   - Instant notifications for new announcements.
-  - Interactive commands (`/start`, `/stop`, `/latest`, `/status`).
+  - Interactive commands (`/start`, `/stop`, `/latest`, `/recent`, `/status`, `/help`).
 - **Premium Web Dashboard:**
   - Real-time status of the background scraper.
   - Live count of active Telegram subscribers.
@@ -88,7 +88,9 @@ Interact with your bot on Telegram using the following commands:
 - `/start` - Subscribe to instant notifications.
 - `/stop` - Unsubscribe from notifications.
 - `/latest` - Fetch the most recent announcement from the database.
+- `/recent` - Get the 5 most recent announcements.
 - `/status` - Check the bot's status and total subscriber count.
+- `/help` - Show available commands.
 
 ## 🌐 Live Demo (GitHub Pages)
 
