@@ -1,5 +1,7 @@
 # BIT Announcement Tracker
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Click%20Here-success?style=for-the-badge)](https://SadeepSachintha.github.io/BIT-Announcement-Tracker/)
+
 A comprehensive tracking system designed to monitor announcements from the Bachelor of Information Technology (BIT) at the University of Colombo School of Computing (UCSC). It tracks multiple sources, stores them in a local SQLite database, alerts subscribed users via a Telegram bot, and provides a modern web dashboard to monitor the system.
 
 ## 🌟 Features
