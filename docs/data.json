@@ -1,0 +1,44 @@
+{
+    "status": {
+        "scraper_running": true,
+        "total_subscribers": 42
+    },
+    "announcements": [
+        {
+            "title": "Applications for Semester 2, 4 & 6 Examinations - Deadline Extended",
+            "pub_date": "2026-05-10",
+            "link": "https://vle.bit.lk/",
+            "source": "VLE"
+        },
+        {
+            "title": "IMPORTANT NOTICE – Applications for Semester 2, 4 & 6 Examinations – Academic Year 2025 – EXTENDED",
+            "pub_date": "2026-05-08",
+            "link": "https://www.bit.lk/index.php/2026/05/08/important-notice-applications-for-semester-2-4-6-examinations-academic-year-2025-extended/",
+            "source": "Main Site"
+        },
+        {
+            "title": "Application for the Bachelor of Information Technology (BIT) Degree Programme – 26th Intake – (Early Registration) – Academic Year 2026",
+            "pub_date": "2026-05-06",
+            "link": "https://www.bit.lk/index.php/2026/05/06/bit-26th-intake-early-registration-2026/",
+            "source": "Main Site"
+        },
+        {
+            "title": "Commencement of IT5106 Course - Software Development Project - 2025",
+            "pub_date": "2026-05-05",
+            "link": "https://project.vle.bit.lk/",
+            "source": "Project VLE"
+        },
+        {
+            "title": "VLE Login Credentials for Students",
+            "pub_date": "2026-05-01",
+            "link": "https://project.vle.bit.lk/",
+            "source": "Project VLE"
+        },
+        {
+            "title": "Applications for Semester 2, 4 & 6 Examinations – AY 2025",
+            "pub_date": "2026-04-22",
+            "link": "https://www.bit.lk/index.php/2026/04/22/applications-for-semester-2-4-6-examinations-ay-2025/",
+            "source": "Main Site"
+        }
+    ]
+}

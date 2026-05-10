@@ -5,41 +5,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const scraperStatus = document.getElementById('scraper-status');
     const subCount = document.getElementById('sub-count');
 
-    async function fetchStatus() {
+    async function fetchData() {
         try {
-            const response = await fetch('/api/status');
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = 'Refreshing...';
+            
+            const response = await fetch('data.json');
             const data = await response.json();
             
-            if (data.scraper_running) {
-                scraperStatus.textContent = 'Online';
+            // Set Status
+            if (data.status.scraper_running) {
+                scraperStatus.textContent = 'Online (Demo)';
                 scraperStatus.className = 'value status-online';
             } else {
                 scraperStatus.textContent = 'Offline';
                 scraperStatus.className = 'value status-offline';
             }
+            subCount.textContent = data.status.total_subscribers;
             
-            subCount.textContent = data.total_subscribers;
-        } catch (error) {
-            console.error('Failed to fetch status', error);
-            scraperStatus.textContent = 'Error';
-            scraperStatus.className = 'value status-offline';
-        }
-    }
-
-    async function fetchAnnouncements() {
-        try {
-            refreshBtn.disabled = true;
-            refreshBtn.innerHTML = 'Refreshing...';
-            
-            const response = await fetch('/api/announcements');
-            const data = await response.json();
-            
+            // Set Announcements
             container.innerHTML = '';
             
-            if (data.length === 0) {
+            if (data.announcements.length === 0) {
                 container.innerHTML = '<div class="loading">No announcements found yet.</div>';
             } else {
-                data.forEach(item => {
+                data.announcements.forEach(item => {
                     const clone = template.content.cloneNode(true);
                     
                     clone.querySelector('.title').textContent = item.title;
@@ -76,8 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         } catch (error) {
-            console.error('Failed to fetch announcements', error);
-            container.innerHTML = '<div class="loading" style="color: #ef4444">Failed to load announcements. Please try again.</div>';
+            console.error('Failed to fetch data', error);
+            container.innerHTML = '<div class="loading" style="color: #ef4444">Failed to load demo data.</div>';
+            scraperStatus.textContent = 'Error';
+            scraperStatus.className = 'value status-offline';
         } finally {
             refreshBtn.disabled = false;
             refreshBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> Refresh';
@@ -85,18 +77,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initial fetch
-    fetchStatus();
-    fetchAnnouncements();
+    fetchData();
 
     // Event listeners
     refreshBtn.addEventListener('click', () => {
-        fetchStatus();
-        fetchAnnouncements();
+        fetchData();
     });
-
-    // Auto-refresh every 30 seconds
-    setInterval(() => {
-        fetchStatus();
-        fetchAnnouncements();
-    }, 30000);
 });

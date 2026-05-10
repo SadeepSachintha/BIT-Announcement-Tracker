@@ -27,16 +27,18 @@ async def latest(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     announcement = database.get_latest_announcement()
     if announcement:
-        message = f"🚨 **Latest Announcement** 🚨\n\n**{announcement['title']}**\n\n📅 Published: {announcement['pub_date']}\n🔗 Link: {announcement['link']}"
+        source = announcement.get('source', 'Main Site')
+        message = f"🚨 **Latest Announcement [{source}]** 🚨\n\n**{announcement['title']}**\n\n📅 Published: {announcement['pub_date']}\n🔗 Link: {announcement['link']}"
         await context.bot.send_message(chat_id=chat_id, text=message, parse_mode='Markdown')
     else:
         await context.bot.send_message(chat_id=chat_id, text="No announcements found yet.")
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    from main import is_scraper_running # Circular import avoidance if needed, but we can just report bot status
+    import scraper
+    scraper_status = "Online 🟢" if scraper.is_running() else "Offline 🔴"
     subs_count = database.get_total_subscribers()
-    await context.bot.send_message(chat_id=chat_id, text=f"🤖 Bot is running.\n👥 Active Subscribers: {subs_count}")
+    await context.bot.send_message(chat_id=chat_id, text=f"🤖 Bot Status: Online 🟢\n🕸️ Scraper: {scraper_status}\n👥 Active Subscribers: {subs_count}")
 
 def init_bot(token):
     global BOT_TOKEN, application

@@ -18,9 +18,17 @@ def init_db():
             title TEXT,
             link TEXT,
             pub_date TEXT,
-            discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            source TEXT DEFAULT 'Main'
         )
     ''')
+    
+    # Check if 'source' column exists (for backward compatibility with existing DB)
+    c.execute("PRAGMA table_info(announcements)")
+    columns = [column['name'] for column in c.fetchall()]
+    if 'source' not in columns:
+        c.execute("ALTER TABLE announcements ADD COLUMN source TEXT DEFAULT 'Main'")
+        
     # Subscribers table
     c.execute('''
         CREATE TABLE IF NOT EXISTS subscribers (
@@ -32,12 +40,12 @@ def init_db():
     conn.commit()
     conn.close()
 
-def add_announcement(id, title, link, pub_date):
+def add_announcement(id, title, link, pub_date, source='Main'):
     conn = get_db()
     c = conn.cursor()
     try:
-        c.execute('INSERT INTO announcements (id, title, link, pub_date) VALUES (?, ?, ?, ?)',
-                  (id, title, link, pub_date))
+        c.execute('INSERT INTO announcements (id, title, link, pub_date, source) VALUES (?, ?, ?, ?, ?)',
+                  (id, title, link, pub_date, source))
         conn.commit()
         return True
     except sqlite3.IntegrityError:
