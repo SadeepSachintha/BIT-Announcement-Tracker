@@ -1,6 +1,14 @@
 import os
 import sqlite3
+import logging
 from datetime import datetime
+
+# Setup logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 # Path for the database file - support Railway Volumes
 DB_PATH = os.getenv('DATABASE_PATH', 'data/bit_tracker.db')
@@ -12,6 +20,60 @@ def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+def migrate_legacy_data():
+    """
+    Safely merges data from the root bit_tracker.db (legacy/repo-tracked) 
+    into the active DB_PATH (volume).
+    """
+    legacy_path = 'bit_tracker.db'
+    
+    # Check if legacy file exists and is different from current DB
+    if os.path.exists(legacy_path) and os.path.abspath(legacy_path) != os.path.abspath(DB_PATH):
+        logger.info(f"Migration: Found legacy database at {legacy_path}. Checking for new data to merge...")
+        try:
+            legacy_conn = sqlite3.connect(legacy_path)
+            legacy_conn.row_factory = sqlite3.Row
+            current_conn = get_db()
+            
+            # Migrate subscribers
+            c_legacy = legacy_conn.cursor()
+            c_legacy.execute("SELECT chat_id, is_active, joined_at FROM subscribers")
+            subs = [dict(row) for row in c_legacy.fetchall()]
+            
+            c_current = current_conn.cursor()
+            merged_subs = 0
+            for sub in subs:
+                c_current.execute(
+                    "INSERT OR IGNORE INTO subscribers (chat_id, is_active, joined_at) VALUES (?, ?, ?)",
+                    (sub['chat_id'], sub['is_active'], sub['joined_at'])
+                )
+                if c_current.rowcount > 0:
+                    merged_subs += 1
+            
+            # Migrate announcements
+            c_legacy.execute("SELECT id, title, link, pub_date, discovered_at, source FROM announcements")
+            anns = [dict(row) for row in c_legacy.fetchall()]
+            merged_anns = 0
+            for ann in anns:
+                c_current.execute(
+                    "INSERT OR IGNORE INTO announcements (id, title, link, pub_date, discovered_at, source) VALUES (?, ?, ?, ?, ?, ?)",
+                    (ann['id'], ann['title'], ann['link'], ann['pub_date'], ann['discovered_at'], ann['source'])
+                )
+                if c_current.rowcount > 0:
+                    merged_anns += 1
+                
+            current_conn.commit()
+            legacy_conn.close()
+            current_conn.close()
+            
+            if merged_subs > 0 or merged_anns > 0:
+                logger.info(f"Migration successful: Merged {merged_subs} subscribers and {merged_anns} announcements.")
+            else:
+                logger.info("Migration: No new data to merge.")
+                
+        except Exception as e:
+            logger.error(f"Migration failed: {e}")
 
 def init_db():
     conn = get_db()
@@ -44,6 +106,9 @@ def init_db():
     ''')
     conn.commit()
     conn.close()
+    
+    # Run migration if necessary
+    migrate_legacy_data()
 
 def add_announcement(id, title, link, pub_date, source='Main'):
     conn = get_db()
