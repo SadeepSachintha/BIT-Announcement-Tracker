@@ -9,7 +9,7 @@ env/
 .venv/
 
 # Database
-# *.db (Temporarily un-ignored for migration to Railway)
+*.db
 *.db-journal
 
 # Configuration
