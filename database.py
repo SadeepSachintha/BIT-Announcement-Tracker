@@ -31,7 +31,7 @@ def migrate_legacy_data():
     
     # Check if legacy file exists and is different from current DB
     if os.path.exists(legacy_path) and os.path.abspath(legacy_path) != os.path.abspath(DB_PATH):
-        logger.info(f"Migration: Found legacy database at {legacy_path}. Checking for new data to merge...")
+        logger.info(f"Migration: Found seed database at {legacy_path}. Starting sync to Railway Volume...")
         try:
             legacy_conn = sqlite3.connect(legacy_path)
             legacy_conn.row_factory = sqlite3.Row
