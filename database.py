@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 # Path for the database file - support Railway Volumes
 DB_PATH = os.getenv('DATABASE_PATH', 'data/bit_tracker.db')
 DB_DIR = os.path.dirname(DB_PATH)
+logger.info(f"Database setup: Using path {os.path.abspath(DB_PATH)}")
 
 def get_db():
     if DB_DIR and not os.path.exists(DB_DIR):
@@ -162,9 +163,15 @@ def get_active_subscribers():
     return [row['chat_id'] for row in rows]
 
 def get_total_subscribers():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('SELECT COUNT(*) as count FROM subscribers WHERE is_active = 1')
-    row = c.fetchone()
-    conn.close()
-    return row['count']
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute('SELECT COUNT(*) FROM subscribers WHERE is_active = 1')
+        row = c.fetchone()
+        count = row[0] if row else 0
+        conn.close()
+        logger.info(f"Subscriber count requested: Found {count} active subscribers.")
+        return count
+    except Exception as e:
+        logger.error(f"Error getting subscriber count: {e}")
+        return 0

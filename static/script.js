@@ -8,7 +8,12 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchStatus() {
         try {
             const response = await fetch('/api/status');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const data = await response.json();
+            
+            console.log('Status data received:', data);
             
             if (data.scraper_running) {
                 scraperStatus.textContent = 'Online';
@@ -18,11 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 scraperStatus.className = 'value status-offline';
             }
             
-            subCount.textContent = data.total_subscribers;
+            // Ensure we handle cases where data might be missing
+            const count = data.total_subscribers !== undefined ? data.total_subscribers : 0;
+            subCount.textContent = count;
+            
         } catch (error) {
-            console.error('Failed to fetch status', error);
+            console.error('Failed to fetch status:', error);
             scraperStatus.textContent = 'Error';
             scraperStatus.className = 'value status-offline';
+            subCount.textContent = 'Error';
         }
     }
 

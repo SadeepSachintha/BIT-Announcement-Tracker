@@ -15,11 +15,22 @@ def get_announcements():
 
 @app.route('/api/status')
 def get_status():
-    status_info = {
-        'scraper_running': scraper.is_running(),
-        'total_subscribers': database.get_total_subscribers()
-    }
-    return jsonify(status_info)
+    try:
+        scraper_status = scraper.is_running()
+        sub_count = database.get_total_subscribers()
+        
+        status_info = {
+            'scraper_running': scraper_status,
+            'total_subscribers': sub_count
+        }
+        
+        # Log the status for debugging
+        app.logger.info(f"Status API called: Scraper={scraper_status}, Subscribers={sub_count}")
+        
+        return jsonify(status_info)
+    except Exception as e:
+        app.logger.error(f"Error in status API: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # Expose app for running via Gunicorn/Waitress if needed
 if __name__ == '__main__':
