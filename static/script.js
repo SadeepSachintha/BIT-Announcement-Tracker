@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const template = document.getElementById('announcement-template');
     const scraperStatus = document.getElementById('scraper-status');
     const subCount = document.getElementById('sub-count');
+    const whatsappStatus = document.getElementById('whatsapp-status');
 
     async function fetchStatus() {
         try {
@@ -27,11 +28,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const count = data.total_subscribers !== undefined ? data.total_subscribers : 0;
             subCount.textContent = count;
             
+            // Update WhatsApp Status
+            if (data.whatsapp_enabled) {
+                if (data.whatsapp_configured) {
+                    const provider = data.whatsapp_provider ? data.whatsapp_provider.toUpperCase() : 'ACTIVE';
+                    whatsappStatus.textContent = `Online (${provider})`;
+                    whatsappStatus.className = 'value status-online';
+                } else {
+                    whatsappStatus.textContent = 'Config Error';
+                    whatsappStatus.className = 'value status-error';
+                }
+            } else {
+                whatsappStatus.textContent = 'Disabled';
+                whatsappStatus.className = 'value status-disabled';
+            }
+            
         } catch (error) {
             console.error('Failed to fetch status:', error);
             scraperStatus.textContent = 'Error';
             scraperStatus.className = 'value status-offline';
             subCount.textContent = 'Error';
+            whatsappStatus.textContent = 'Error';
+            whatsappStatus.className = 'value status-offline';
         }
     }
 

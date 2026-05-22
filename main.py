@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import database
 import bot
 import scraper
+import whatsapp
 from app import app
 import logging
 from werkzeug.serving import make_server
@@ -71,8 +72,15 @@ async def main():
 
     await application.updater.start_polling()
 
+    # Dual broadcast callback to send announcements to all channels
+    async def dual_broadcast(message):
+        # Broadcast to Telegram bot subscribers
+        await bot.broadcast_message(message)
+        # Broadcast to WhatsApp channel (if enabled)
+        await whatsapp.broadcast_message(message)
+
     # Start scraper task
-    scraper_task = asyncio.create_task(scraper.run_scraper(bot.broadcast_message, interval=300))
+    scraper_task = asyncio.create_task(scraper.run_scraper(dual_broadcast, interval=300))
 
     logger.info("System is running. Press Ctrl+C to stop.")
 
