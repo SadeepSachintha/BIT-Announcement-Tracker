@@ -74,6 +74,9 @@ async def main():
 
     # Dual broadcast callback to send announcements to all channels
     async def dual_broadcast(message):
+        if os.getenv("PAUSE_NOTIFICATIONS", "false").lower() == "true":
+            logger.info("Broadcasting is currently PAUSED via PAUSE_NOTIFICATIONS env variable.")
+            return
         # Broadcast to Telegram bot subscribers
         await bot.broadcast_message(message)
         # Broadcast to WhatsApp channel (if enabled)
