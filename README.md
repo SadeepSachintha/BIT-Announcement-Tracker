@@ -14,9 +14,13 @@ A comprehensive tracking system designed to monitor announcements from the Bache
 - **Telegram Bot Integration:**
   - Instant notifications for new announcements.
   - Interactive commands (`/start`, `/stop`, `/latest`, `/recent`, `/status`, `/help`).
+- **WhatsApp Channel Integration:**
+  - Push announcements directly to a WhatsApp Channel, Group, or Chat.
+  - Automated formatting conversion (Telegram Markdown to clean WhatsApp-compliant layout).
+  - Out-of-the-box support for popular gateways (WAHA, Whapi.cloud, Wassenger, or custom).
 - **Premium Web Dashboard:**
   - Real-time status of the background scraper.
-  - Live count of active Telegram subscribers.
+  - Live status tracking of both Telegram subscribers and WhatsApp channel broadcast integration.
   - Chronological list of announcements with color-coded source badges.
 - **Smart Data Management:**
   - Automatic duplicate detection.
@@ -45,9 +49,16 @@ A comprehensive tracking system designed to monitor announcements from the Bache
    ```
 
 3. **Configure API Keys:**
-   Create a `.env` file from the example:
+   Create a `.env` file and set the Telegram bot token and optional WhatsApp variables:
    ```env
    TELEGRAM_BOT_TOKEN=your_actual_bot_token_here
+   
+   # Optional WhatsApp Channel configuration
+   WHATSAPP_ENABLED=true
+   WHATSAPP_PROVIDER=waha                  # Options: waha, whapi, wassenger, generic
+   WHATSAPP_API_URL=http://localhost:3000/api/sendText
+   WHATSAPP_API_KEY=your_optional_api_key
+   WHATSAPP_CHANNEL_ID=120363000000000000@newsletter
    ```
 
 ## 🎮 Usage

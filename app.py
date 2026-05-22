@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, render_template
 import database
 import scraper
+import whatsapp
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -21,7 +22,10 @@ def get_status():
         
         status_info = {
             'scraper_running': scraper_status,
-            'total_subscribers': sub_count
+            'total_subscribers': sub_count,
+            'whatsapp_enabled': whatsapp.ENABLED,
+            'whatsapp_provider': whatsapp.PROVIDER if whatsapp.ENABLED else None,
+            'whatsapp_configured': bool(whatsapp.CHANNEL_ID and whatsapp.API_URL)
         }
         
         # Log the status for debugging

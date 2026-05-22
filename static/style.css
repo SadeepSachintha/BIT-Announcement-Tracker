@@ -40,6 +40,8 @@ header {
     margin-bottom: 3rem;
     padding-bottom: 2rem;
     border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 1.5rem;
 }
 
 .logo {
@@ -74,6 +76,8 @@ h1 {
 .status-panel {
     display: flex;
     gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .status-card {
@@ -102,6 +106,8 @@ h1 {
 
 .status-online { color: var(--accent); }
 .status-offline { color: #ef4444; }
+.status-disabled { color: var(--text-muted); }
+.status-error { color: #f59e0b; }
 
 .section-header {
     display: flex;
