@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const scraperStatus = document.getElementById('scraper-status');
     const subCount = document.getElementById('sub-count');
     const whatsappStatus = document.getElementById('whatsapp-status');
+    const broadcastStatus = document.getElementById('broadcast-status');
 
     async function fetchStatus() {
         try {
@@ -42,6 +43,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 whatsappStatus.textContent = 'Disabled';
                 whatsappStatus.className = 'value status-disabled';
             }
+
+            // Update Broadcast Mode Status
+            if (broadcastStatus) {
+                if (data.notifications_paused) {
+                    broadcastStatus.textContent = 'Paused ⏸️';
+                    broadcastStatus.className = 'value status-error'; // uses warning/orange status color
+                } else {
+                    broadcastStatus.textContent = 'Active 🟢';
+                    broadcastStatus.className = 'value status-online';
+                }
+            }
             
         } catch (error) {
             console.error('Failed to fetch status:', error);
@@ -50,6 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
             subCount.textContent = 'Error';
             whatsappStatus.textContent = 'Error';
             whatsappStatus.className = 'value status-offline';
+            if (broadcastStatus) {
+                broadcastStatus.textContent = 'Error';
+                broadcastStatus.className = 'value status-offline';
+            }
         }
     }
 

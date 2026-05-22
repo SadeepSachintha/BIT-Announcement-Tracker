@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify, render_template
 import database
 import scraper
@@ -25,7 +26,8 @@ def get_status():
             'total_subscribers': sub_count,
             'whatsapp_enabled': whatsapp.ENABLED,
             'whatsapp_provider': whatsapp.PROVIDER if whatsapp.ENABLED else None,
-            'whatsapp_configured': bool(whatsapp.CHANNEL_ID and whatsapp.API_URL)
+            'whatsapp_configured': bool(whatsapp.CHANNEL_ID and whatsapp.API_URL),
+            'notifications_paused': os.getenv("PAUSE_NOTIFICATIONS", "false").lower() == "true"
         }
         
         # Log the status for debugging
