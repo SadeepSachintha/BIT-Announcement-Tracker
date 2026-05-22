@@ -89,17 +89,27 @@ async def fetch_all_sources(broadcast_func):
     for item in all_announcements:
         if database.add_announcement(item['guid'], item['title'], item['link'], item['pub_date'], item['source']):
             logger.info(f"New announcement found from {item['source']}: {item['title']}")
-            message = f"🚨 **New Announcement [{item['source']}]** 🚨\n\n**{item['title']}**\n\n📅 Published: {item['pub_date']}\n🔗 Link: {item['link']}"
-            await broadcast_func(message)
+            if broadcast_func:
+                message = f"🚨 **New Announcement [{item['source']}]** 🚨\n\n**{item['title']}**\n\n📅 Published: {item['pub_date']}\n🔗 Link: {item['link']}"
+                await broadcast_func(message)
 
 async def run_scraper(broadcast_func, interval=300):
     global scraper_running
     scraper_running = True
     logger.info(f"Scraper started, running every {interval} seconds.")
+    
+    # Silent first run to populate initial database and prevent spamming on restarts
+    logger.info("Performing silent first run to sync existing announcements...")
+    try:
+        await fetch_all_sources(broadcast_func=None)
+        logger.info("Silent first run completed. Scraper is now active for new updates.")
+    except Exception as e:
+        logger.error(f"Error during silent first run: {e}")
+        
     try:
         while True:
-            await fetch_all_sources(broadcast_func)
             await asyncio.sleep(interval)
+            await fetch_all_sources(broadcast_func)
     except asyncio.CancelledError:
         scraper_running = False
         logger.info("Scraper stopped.")
