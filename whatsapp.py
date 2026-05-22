@@ -55,6 +55,7 @@ async def broadcast_message(message: str) -> bool:
     headers = {}
     if API_KEY:
         headers["Authorization"] = f"Bearer {API_KEY}"
+        headers["X-Api-Key"] = API_KEY
     
     # Formulate payload depending on chosen provider
     payload = {}
@@ -63,7 +64,8 @@ async def broadcast_message(message: str) -> bool:
         headers["Content-Type"] = "application/json"
         payload = {
             "chatId": CHANNEL_ID,
-            "text": whatsapp_msg
+            "text": whatsapp_msg,
+            "session": os.getenv("WHATSAPP_SESSION", "default")
         }
     elif PROVIDER == "whapi":
         # Whapi.Cloud send text message schema
