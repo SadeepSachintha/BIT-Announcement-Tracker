@@ -25,17 +25,16 @@ def format_message_for_whatsapp(message: str) -> str:
     formatted = message.replace("**", "*")
     return formatted
 
-def send_http_request(url: str, json_data: dict, headers: dict) -> requests.Response:
+def send_http_request(url: str, json_data: dict, headers: dict, timeout: int = 45) -> requests.Response:
     """
-    Synchronous HTTP helper for running inside a thread.
+    Synchronous HTTP helper for running inside a thread with configurable timeout.
     """
-    return requests.post(url, json=json_data, headers=headers, timeout=15)
+    return requests.post(url, json=json_data, headers=headers, timeout=timeout)
 
 async def broadcast_message(message: str) -> bool:
     """
     Broadcasts the given announcement message to the configured WhatsApp Channel/Chat.
-    This runs the synchronous requests library inside an executor/thread to avoid blocking 
-    the asyncio event loop.
+    Includes a retry mechanism to handle transient WAHA server lag or timeouts.
     """
     if not ENABLED:
         logger.info("WhatsApp broadcasting is disabled.")
@@ -86,23 +85,32 @@ async def broadcast_message(message: str) -> bool:
         headers["Content-Type"] = "application/json"
         payload = {
             "to": CHANNEL_ID,
+            "body": whatsapp_msg,
             "text": whatsapp_msg,
             "message": whatsapp_msg
         }
         
-    logger.info(f"Dispatching announcement to WhatsApp Channel/Chat via '{PROVIDER}' provider...")
+    max_retries = 3
+    retry_delay = 5
     
-    try:
-        # Execute the HTTP request in a thread pool to avoid blocking the main event loop
-        response = await asyncio.to_thread(send_http_request, API_URL, payload, headers)
-        
-        if response.status_code in [200, 201, 202]:
-            logger.info("Announcement successfully broadcasted to WhatsApp!")
-            return True
-        else:
-            logger.error(f"WhatsApp API returned error code {response.status_code}: {response.text}")
-            return False
+    for attempt in range(1, max_retries + 1):
+        logger.info(f"Dispatching announcement to WhatsApp Channel/Chat via '{PROVIDER}' (Attempt {attempt}/{max_retries})...")
+        try:
+            # Execute the HTTP request in a thread pool to avoid blocking the main event loop
+            response = await asyncio.to_thread(send_http_request, API_URL, payload, headers, 45)
             
-    except Exception as e:
-        logger.error(f"Failed to broadcast message to WhatsApp due to exception: {e}")
-        return False
+            if response.status_code in [200, 201, 202]:
+                logger.info("Announcement successfully broadcasted to WhatsApp!")
+                return True
+            else:
+                logger.error(f"WhatsApp API returned error code {response.status_code} on attempt {attempt}: {response.text}")
+                
+        except Exception as e:
+            logger.error(f"Failed to broadcast message on attempt {attempt} due to exception: {e}")
+            
+        if attempt < max_retries:
+            logger.info(f"Waiting {retry_delay} seconds before retrying...")
+            await asyncio.sleep(retry_delay)
+            
+    logger.error("WhatsApp broadcast failed after all retries.")
+    return False
