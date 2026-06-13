@@ -106,21 +106,62 @@ python main.py
 *   **Dashboard URL:** `http://localhost:5000`
 *   **Log Feed:** Check console standard output for periodic status summaries.
 
----
+## ☁️ Deployment (Oracle Cloud / VPS)
 
-## ☁️ Deployment (Railway)
+To host the announcement tracker 24/7 on an Always Free Oracle Cloud VM or any Linux VPS:
 
-The tracker is configured for 24/7 hosting on [Railway](https://railway.app/).
+### 1. VM Port Configuration
+Ensure that port `5000` is open on your VM's firewall and security list:
+*   **Oracle Cloud Console:** Go to your VM instance -> Virtual Cloud Network -> Security Lists -> Add Ingress Rule for CIDR `0.0.0.0/0` on port `5000` (TCP).
+*   **Ubuntu OS Firewall:**
+    ```bash
+    sudo ufw allow 5000/tcp
+    # Or if iptables is used:
+    sudo iptables -I INPUT -p tcp --dport 5000 -j ACCEPT
+    ```
 
-1.  **Environment Setup:** In the Railway dashboard under your service settings, add:
-    *   `DATABASE_PATH`: `/app/data/bit_tracker.db`
-    *   Add any optional WhatsApp configurations as desired.
-2.  **Persistent Volumes (CRITICAL):**
-    *   Create a Railway Persistent Volume and mount it to `/app/data`.
-    *   This ensures that your subscription database persists through service rebuilds and redeployments.
-3.  **Database Safety:**
-    *   > [!WARNING]
-    *   > **Never commit your `bit_tracker.db` file to Git.** It is ignored via `.gitignore` to prevent repository contamination. The application will initialize a fresh database inside the volume upon startup.
+### 2. Service Setup
+1.  Clone the repository and set up a virtual environment:
+    ```bash
+    git clone https://github.com/SadeepSachintha/BIT-Announcement-Tracker.git
+    cd BIT-Announcement-Tracker
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
+2.  Create a `.env` file in the root directory and specify your configurations (e.g. `PORT=5000`, WhatsApp keys, etc.).
+
+### 3. Run continuously (systemd)
+Create a persistent background service so the application restarts automatically on VM reboots:
+1.  Create a systemd unit file:
+    ```bash
+    sudo nano /etc/systemd/system/bit-tracker.service
+    ```
+2.  Paste the configuration below (adjusting `/path/to/...` to your actual workspace paths):
+    ```ini
+    [Unit]
+    Description=BIT Announcement Tracker Service
+    After=network.target
+
+    [Service]
+    User=ubuntu
+    WorkingDirectory=/home/ubuntu/BIT-Announcement-Tracker
+    ExecStart=/home/ubuntu/BIT-Announcement-Tracker/venv/bin/python main.py
+    Restart=always
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+3.  Start and enable the service:
+    ```bash
+    sudo systemctl daemon-reload
+    sudo systemctl start bit-tracker
+    sudo systemctl enable bit-tracker
+    ```
+4.  Check status:
+    ```bash
+    sudo systemctl status bit-tracker
+    ```
 
 ---
 

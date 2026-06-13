@@ -92,6 +92,8 @@ async def fetch_all_sources(broadcast_func):
             if broadcast_func:
                 message = f"🚨 **New Announcement [{item['source']}]** 🚨\n\n**{item['title']}**\n\n📅 Published: {item['pub_date']}\n🔗 Link: {item['link']}"
                 await broadcast_func(message)
+                
+    database.update_scraper_status("Success")
 
 async def run_scraper(broadcast_func, interval=300):
     global scraper_running
