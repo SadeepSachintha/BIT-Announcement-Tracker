@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, jsonify, render_template
 import database
 import scraper

@@ -1,16 +1,16 @@
-import asyncio
-import threading
 import os
 from dotenv import load_dotenv
+# Load environment variables first
+load_dotenv()
+
+import asyncio
+import threading
 import database
 import scraper
 import whatsapp
 from app import app
 import logging
 from werkzeug.serving import make_server
-
-# Load environment variables
-load_dotenv()
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
