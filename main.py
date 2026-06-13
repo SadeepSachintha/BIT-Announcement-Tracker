@@ -3,7 +3,6 @@ import threading
 import os
 from dotenv import load_dotenv
 import database
-import bot
 import scraper
 import whatsapp
 from app import app
@@ -38,52 +37,20 @@ async def main():
     # Initialize DB
     database.init_db()
 
-    # Bot Token from .env
-    BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not BOT_TOKEN:
-        logger.error("TELEGRAM_BOT_TOKEN not found in .env file.")
-        return
-
     # Start Flask app in a separate thread so it doesn't block asyncio loop
     server_thread = ServerThread(app)
     server_thread.start()
 
-    # Initialize Bot
-    application = bot.init_bot(BOT_TOKEN)
-
-    # Initialize Bot components
-    await application.initialize()
-    await application.start()
-    
-    # Set bot commands menu
-    from telegram import BotCommand
-    commands = [
-        BotCommand("start", "Subscribe to notifications"),
-        BotCommand("stop", "Unsubscribe from notifications"),
-        BotCommand("latest", "Get the latest announcement"),
-        BotCommand("recent", "Get the 5 most recent announcements"),
-        BotCommand("status", "Check bot and scraper status"),
-        BotCommand("help", "Show available commands")
-    ]
-    try:
-        await application.bot.set_my_commands(commands)
-    except Exception as e:
-        logger.error(f"Failed to set bot commands: {e}")
-
-    await application.updater.start_polling()
-
-    # Dual broadcast callback to send announcements to all channels
-    async def dual_broadcast(message):
+    # Broadcast callback to send announcements to WhatsApp
+    async def broadcast_announcement(message):
         if os.getenv("PAUSE_NOTIFICATIONS", "false").lower() == "true":
             logger.info("Broadcasting is currently PAUSED via PAUSE_NOTIFICATIONS env variable.")
             return
-        # Broadcast to Telegram bot subscribers
-        await bot.broadcast_message(message)
         # Broadcast to WhatsApp channel (if enabled)
         await whatsapp.broadcast_message(message)
 
     # Start scraper task
-    scraper_task = asyncio.create_task(scraper.run_scraper(dual_broadcast, interval=300))
+    scraper_task = asyncio.create_task(scraper.run_scraper(broadcast_announcement, interval=300))
 
     logger.info("System is running. Press Ctrl+C to stop.")
 
@@ -98,9 +65,6 @@ async def main():
     finally:
         logger.info("Shutting down...")
         scraper_task.cancel()
-        await application.updater.stop()
-        await application.stop()
-        await application.shutdown()
         server_thread.shutdown()
 
 if __name__ == "__main__":

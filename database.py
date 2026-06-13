@@ -10,168 +10,167 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Path for the database file - support Railway Volumes
-DB_PATH = os.getenv('DATABASE_PATH', 'data/bit_tracker.db')
-DB_DIR = os.path.dirname(DB_PATH)
-logger.info(f"Database setup: Using path {os.path.abspath(DB_PATH)}")
+DATABASE_URL = os.getenv('DATABASE_URL')
+IS_POSTGRES = DATABASE_URL is not None and (DATABASE_URL.startswith("postgres://") or DATABASE_URL.startswith("postgresql://"))
+
+if IS_POSTGRES:
+    import psycopg2
+    import psycopg2.extras
+    # Supabase / Heroku environment fix
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    logger.info("Database setup: Using PostgreSQL (Supabase)")
+else:
+    DB_PATH = os.getenv('DATABASE_PATH', 'data/bit_tracker.db')
+    DB_DIR = os.path.dirname(DB_PATH) if DB_PATH else None
+    logger.info(f"Database setup: Using SQLite path {os.path.abspath(DB_PATH) if DB_PATH else 'None'}")
 
 def get_db():
-    if DB_DIR and not os.path.exists(DB_DIR):
-        os.makedirs(DB_DIR, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    if IS_POSTGRES:
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn
+    else:
+        if DB_DIR and not os.path.exists(DB_DIR):
+            os.makedirs(DB_DIR, exist_ok=True)
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
 
-def migrate_legacy_data():
-    """
-    Safely merges data from the root bit_tracker.db (legacy/repo-tracked) 
-    into the active DB_PATH (volume).
-    """
-    legacy_path = 'bit_tracker.db'
-    
-    # Check if legacy file exists and is different from current DB
-    if os.path.exists(legacy_path) and os.path.abspath(legacy_path) != os.path.abspath(DB_PATH):
-        logger.info(f"Migration: Found seed database at {legacy_path}. Starting sync to Railway Volume...")
-        try:
-            legacy_conn = sqlite3.connect(legacy_path)
-            legacy_conn.row_factory = sqlite3.Row
-            current_conn = get_db()
-            
-            # Migrate subscribers
-            c_legacy = legacy_conn.cursor()
-            c_legacy.execute("SELECT chat_id, is_active, joined_at FROM subscribers")
-            subs = [dict(row) for row in c_legacy.fetchall()]
-            
-            c_current = current_conn.cursor()
-            merged_subs = 0
-            for sub in subs:
-                c_current.execute(
-                    "INSERT OR IGNORE INTO subscribers (chat_id, is_active, joined_at) VALUES (?, ?, ?)",
-                    (sub['chat_id'], sub['is_active'], sub['joined_at'])
-                )
-                if c_current.rowcount > 0:
-                    merged_subs += 1
-            
-            # Migrate announcements
-            c_legacy.execute("SELECT id, title, link, pub_date, discovered_at, source FROM announcements")
-            anns = [dict(row) for row in c_legacy.fetchall()]
-            merged_anns = 0
-            for ann in anns:
-                c_current.execute(
-                    "INSERT OR IGNORE INTO announcements (id, title, link, pub_date, discovered_at, source) VALUES (?, ?, ?, ?, ?, ?)",
-                    (ann['id'], ann['title'], ann['link'], ann['pub_date'], ann['discovered_at'], ann['source'])
-                )
-                if c_current.rowcount > 0:
-                    merged_anns += 1
-                
-            current_conn.commit()
-            legacy_conn.close()
-            current_conn.close()
-            
-            if merged_subs > 0 or merged_anns > 0:
-                logger.info(f"Migration successful: Merged {merged_subs} subscribers and {merged_anns} announcements.")
-            else:
-                logger.info("Migration: No new data to merge.")
-                
-        except Exception as e:
-            logger.error(f"Migration failed: {e}")
+def get_cursor(conn):
+    if IS_POSTGRES:
+        return conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    else:
+        return conn.cursor()
+
+def get_placeholder():
+    return "%s" if IS_POSTGRES else "?"
 
 def init_db():
     conn = get_db()
-    c = conn.cursor()
-    # Announcements table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS announcements (
-            id TEXT PRIMARY KEY,
-            title TEXT,
-            link TEXT,
-            pub_date TEXT,
-            discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            source TEXT DEFAULT 'Main'
-        )
-    ''')
-    
-    # Check if 'source' column exists (for backward compatibility with existing DB)
-    c.execute("PRAGMA table_info(announcements)")
-    columns = [column['name'] for column in c.fetchall()]
-    if 'source' not in columns:
-        c.execute("ALTER TABLE announcements ADD COLUMN source TEXT DEFAULT 'Main'")
-        
-    # Subscribers table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS subscribers (
-            chat_id TEXT PRIMARY KEY,
-            is_active INTEGER DEFAULT 1,
-            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+    c = get_cursor(conn)
+    if IS_POSTGRES:
+        # PostgreSQL syntax
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS announcements (
+                id TEXT PRIMARY KEY,
+                title TEXT,
+                link TEXT,
+                pub_date TEXT,
+                discovered_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                source TEXT DEFAULT 'Main'
+            )
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS scraper_status (
+                key TEXT PRIMARY KEY,
+                last_run TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                status TEXT
+            )
+        ''')
+    else:
+        # SQLite syntax
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS announcements (
+                id TEXT PRIMARY KEY,
+                title TEXT,
+                link TEXT,
+                pub_date TEXT,
+                discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                source TEXT DEFAULT 'Main'
+            )
+        ''')
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS scraper_status (
+                key TEXT PRIMARY KEY,
+                last_run TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                status TEXT
+            )
+        ''')
     conn.commit()
     conn.close()
-    
-    # Run migration if necessary
-    migrate_legacy_data()
+    logger.info("Database initialized successfully.")
 
 def add_announcement(id, title, link, pub_date, source='Main'):
     conn = get_db()
-    c = conn.cursor()
+    c = get_cursor(conn)
+    p = get_placeholder()
     try:
-        c.execute('INSERT INTO announcements (id, title, link, pub_date, source) VALUES (?, ?, ?, ?, ?)',
+        c.execute(f'INSERT INTO announcements (id, title, link, pub_date, source) VALUES ({p}, {p}, {p}, {p}, {p})',
                   (id, title, link, pub_date, source))
         conn.commit()
         return True
-    except sqlite3.IntegrityError:
+    except Exception as e:
+        err_msg = str(e).lower()
+        if "duplicate" in err_msg or "unique" in err_msg or "integrity" in err_msg:
+            return False
+        logger.error(f"Error adding announcement: {e}")
         return False
     finally:
         conn.close()
 
 def get_latest_announcements(limit=10):
     conn = get_db()
-    c = conn.cursor()
-    c.execute('SELECT * FROM announcements ORDER BY discovered_at DESC LIMIT ?', (limit,))
-    rows = c.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+    c = get_cursor(conn)
+    p = get_placeholder()
+    try:
+        query = f'SELECT * FROM announcements ORDER BY discovered_at DESC LIMIT {p}'
+        c.execute(query, (limit,))
+        rows = c.fetchall()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logger.error(f"Failed to get latest announcements: {e}")
+        return []
+    finally:
+        conn.close()
 
 def get_latest_announcement():
     conn = get_db()
-    c = conn.cursor()
-    c.execute('SELECT * FROM announcements ORDER BY discovered_at DESC LIMIT 1')
-    row = c.fetchone()
-    conn.close()
-    return dict(row) if row else None
-
-def add_subscriber(chat_id):
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('INSERT OR REPLACE INTO subscribers (chat_id, is_active) VALUES (?, 1)', (str(chat_id),))
-    conn.commit()
-    conn.close()
-
-def remove_subscriber(chat_id):
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('UPDATE subscribers SET is_active = 0 WHERE chat_id = ?', (str(chat_id),))
-    conn.commit()
-    conn.close()
-
-def get_active_subscribers():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('SELECT chat_id FROM subscribers WHERE is_active = 1')
-    rows = c.fetchall()
-    conn.close()
-    return [row['chat_id'] for row in rows]
-
-def get_total_subscribers():
+    c = get_cursor(conn)
     try:
-        conn = get_db()
-        c = conn.cursor()
-        c.execute('SELECT COUNT(*) FROM subscribers WHERE is_active = 1')
+        c.execute('SELECT * FROM announcements ORDER BY discovered_at DESC LIMIT 1')
         row = c.fetchone()
-        count = row[0] if row else 0
-        conn.close()
-        logger.info(f"Subscriber count requested: Found {count} active subscribers.")
-        return count
+        return dict(row) if row else None
     except Exception as e:
-        logger.error(f"Error getting subscriber count: {e}")
-        return 0
+        logger.error(f"Failed to get latest announcement: {e}")
+        return None
+    finally:
+        conn.close()
+
+def update_scraper_status(status="Success"):
+    conn = get_db()
+    c = get_cursor(conn)
+    p = get_placeholder()
+    now = datetime.now()
+    try:
+        if IS_POSTGRES:
+            c.execute('''
+                INSERT INTO scraper_status (key, last_run, status)
+                VALUES ('scraper', %s, %s)
+                ON CONFLICT (key) DO UPDATE SET last_run = EXCLUDED.last_run, status = EXCLUDED.status
+            ''', (now, status))
+        else:
+            c.execute('''
+                INSERT OR REPLACE INTO scraper_status (key, last_run, status)
+                VALUES ('scraper', ?, ?)
+            ''', (now, status))
+        conn.commit()
+        logger.info(f"Updated scraper status to: {status}")
+    except Exception as e:
+        logger.error(f"Failed to update scraper status: {e}")
+    finally:
+        conn.close()
+
+def get_scraper_status():
+    conn = get_db()
+    c = get_cursor(conn)
+    try:
+        c.execute("SELECT last_run, status FROM scraper_status WHERE key = 'scraper'")
+        row = c.fetchone()
+        if row:
+            return dict(row)
+        return None
+    except Exception as e:
+        logger.error(f"Failed to get scraper status: {e}")
+        return None
+    finally:
+        conn.close()

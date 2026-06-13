@@ -99,6 +99,13 @@ h1 {
     font-weight: 600;
 }
 
+.sub-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+    font-weight: 400;
+}
+
 .value {
     font-weight: 600;
     font-size: 1.125rem;

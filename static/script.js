@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('announcements-container');
     const template = document.getElementById('announcement-template');
     const scraperStatus = document.getElementById('scraper-status');
-    const subCount = document.getElementById('sub-count');
+    const scraperLastRun = document.getElementById('scraper-last-run');
     const whatsappStatus = document.getElementById('whatsapp-status');
     const broadcastStatus = document.getElementById('broadcast-status');
 
@@ -25,9 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 scraperStatus.className = 'value status-offline';
             }
             
-            // Ensure we handle cases where data might be missing
-            const count = data.total_subscribers !== undefined ? data.total_subscribers : 0;
-            subCount.textContent = count;
+            // Update scraper last run time
+            if (scraperLastRun && data.last_run) {
+                scraperLastRun.textContent = data.last_run !== "Never" ? `Checked: ${data.last_run}` : 'Never Checked';
+            }
             
             // Update WhatsApp Status
             if (data.whatsapp_enabled) {
@@ -59,7 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Failed to fetch status:', error);
             scraperStatus.textContent = 'Error';
             scraperStatus.className = 'value status-offline';
-            subCount.textContent = 'Error';
+            if (scraperLastRun) {
+                scraperLastRun.textContent = '';
+            }
             whatsappStatus.textContent = 'Error';
             whatsappStatus.className = 'value status-offline';
             if (broadcastStatus) {

@@ -18,12 +18,37 @@ def get_announcements():
 @app.route('/api/status')
 def get_status():
     try:
-        scraper_status = scraper.is_running()
-        sub_count = database.get_total_subscribers()
+        from datetime import datetime, timedelta
+        
+        # Check database for last scraper execution status
+        last_status = database.get_scraper_status()
+        scraper_status = False
+        last_run_str = "Never"
+        
+        if last_status:
+            last_run = last_status['last_run']
+            if isinstance(last_run, str):
+                # Handle SQLite string representation of datetime
+                try:
+                    dt = datetime.strptime(last_run.split('.')[0], "%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    dt = datetime.now()
+            else:
+                dt = last_run
+            
+            # If cron executed within the last 45 minutes, consider it online
+            diff = datetime.now() - dt.replace(tzinfo=None)
+            if diff < timedelta(minutes=45):
+                scraper_status = True
+                
+            last_run_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            # Fallback to in-memory check (if running locally via python main.py)
+            scraper_status = scraper.is_running()
         
         status_info = {
             'scraper_running': scraper_status,
-            'total_subscribers': sub_count,
+            'last_run': last_run_str,
             'whatsapp_enabled': whatsapp.ENABLED,
             'whatsapp_provider': whatsapp.PROVIDER if whatsapp.ENABLED else None,
             'whatsapp_configured': bool(whatsapp.CHANNEL_ID and whatsapp.API_URL),
@@ -31,7 +56,7 @@ def get_status():
         }
         
         # Log the status for debugging
-        app.logger.info(f"Status API called: Scraper={scraper_status}, Subscribers={sub_count}")
+        app.logger.info(f"Status API called: Scraper={scraper_status}, LastRun={last_run_str}")
         
         return jsonify(status_info)
     except Exception as e:

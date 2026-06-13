@@ -1,9 +1,8 @@
 # BIT Announcement Tracker 🚀
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Click%20Here-success?style=for-the-badge)](https://SadeepSachintha.github.io/BIT-Announcement-Tracker/)
-[![Telegram Bot](https://img.shields.io/badge/Telegram-Bot-blue?style=for-the-badge&logo=telegram)](https://t.me/BITAnnouncementTracker_bot)
 
-A premium, comprehensive tracking and notification system designed to monitor announcements from the **Bachelor of Information Technology (BIT)** program at the **University of Colombo School of Computing (UCSC)**. It aggregates updates from multiple portals, stores them securely in a local SQLite database, alerts subscribed users instantly via a Telegram Bot, broadcasts updates to a WhatsApp Channel, and renders all system activities on a real-time web dashboard.
+A premium, comprehensive tracking and notification system designed to monitor announcements from the **Bachelor of Information Technology (BIT)** program at the **University of Colombo School of Computing (UCSC)**. It aggregates updates from multiple portals, stores them securely in a local SQLite database, broadcasts updates to a WhatsApp Channel, and renders all system activities on a real-time web dashboard.
 
 ---
 
@@ -13,9 +12,8 @@ A premium, comprehensive tracking and notification system designed to monitor an
     *   **Main BIT Website:** Monitors the primary RSS feed.
     *   **VLE Portal:** Scrapes the main Virtual Learning Environment site announcements.
     *   **Project VLE Portal:** Tracks project-specific Virtual Learning Environment site announcements.
-*   **Dual-Channel Broadcast Engine:**
-    *   **Telegram Bot Integration:** Interactive commands with instant pushes to all active subscribers.
-    *   **WhatsApp Channel Broadcasting:** Integrates with leading WhatsApp API gateways. Automatic layout standardizer to format Telegram Markdown into clean, native WhatsApp formatting.
+*   **WhatsApp Broadcasting:**
+    *   **WhatsApp Channel Broadcasting:** Integrates with leading WhatsApp API gateways. Automatic layout standardizer to format Markdown into clean, native WhatsApp formatting.
 *   **Modern Web Dashboard:**
     *   Responsive UI featuring a tailored HSL dark-mode theme and professional Outfit typography.
     *   Real-time status indicators monitoring the scraper lifecycle, Telegram subscriber metrics, WhatsApp connection, and system-wide broadcast state.
@@ -35,26 +33,11 @@ The interactive dashboard displays live indicators for instantaneous health chec
 | Indicator | Status States | Description |
 | :--- | :--- | :--- |
 | **Scraper Status** | `Online` \| `Offline` | Tracks if the background periodic parsing thread is actively running. |
-| **Active Subscribers** | `Count (e.g. 12)` | Displays a live count of registered Telegram chat subscribers in the database. |
 | **WhatsApp Channel** | `Online (<PROVIDER>)` \| `Config Error` \| `Disabled` | Details the status and selected gateway API profile for WhatsApp integration. |
 | **Broadcast Mode** | `Active 🟢` \| `Paused ⏸️` | Shows whether the global notification switch is allowing pushes or temporarily holding them. |
 
 ---
 
-## 🤖 Telegram Bot Commands
-
-Subscribers can query the Telegram Bot directly using these standard interactive menu commands:
-
-| Command | Action | Description |
-| :--- | :--- | :--- |
-| `/start` | **Subscribe** | Register your chat ID in the database to receive instant new announcement alerts. |
-| `/stop` | **Unsubscribe** | Remove your chat ID to permanently cease receiving notifications. |
-| `/latest` | **Query Single** | Instantly retrieve the single newest announcement published across all sources. |
-| `/recent` | **Query Feed** | Fetch a chronological list of the 5 most recent announcements. |
-| `/status` | **Diagnostics** | Query the live health metrics of the scraper loop and active subscriber pool. |
-| `/help` | **Instructions** | Display all available commands and basic bot configuration guidelines. |
-
----
 
 ## ⚙️ Environment Configuration
 
@@ -65,8 +48,7 @@ Create a `.env` file in the root directory to define system variables. All optio
 # BIT ANNOUNCEMENT TRACKER CONFIGURATION
 # ==============================================================================
 
-# --- Core Bot Configurations ---
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+# --- Core Configurations ---
 DATABASE_PATH=data/bit_tracker.db         # SQLite file path (Optional, defaults to 'data/bit_tracker.db')
 PORT=5000                                 # Flask web port (Optional, defaults to 5000)
 
@@ -87,7 +69,7 @@ WHATSAPP_SESSION=default                  # Session name parameter (Optional, WA
 
 ## 🛠️ Tech Stack
 
-*   **Backend Core:** Python 3.x, Flask, `python-telegram-bot`
+*   **Backend Core:** Python 3.x, Flask
 *   **Web Scraping & Parsing:** `feedparser`, `beautifulsoup4`, `requests`
 *   **Database:** SQLite3
 *   **Frontend UI:** HTML5, CSS3 (Outfit Typography, customized grid alignment, dynamic status badges), Vanilla JavaScript (ES6 Fetch APIs)
@@ -117,7 +99,7 @@ pip install -r requirements.txt
 ```
 
 ### 4. Running the System
-To start the unified system (Flask server, scraper loop, and Telegram polling handler):
+To start the unified system (Flask server and background scraper loop):
 ```bash
 python main.py
 ```
@@ -131,7 +113,6 @@ python main.py
 The tracker is configured for 24/7 hosting on [Railway](https://railway.app/).
 
 1.  **Environment Setup:** In the Railway dashboard under your service settings, add:
-    *   `TELEGRAM_BOT_TOKEN`: Your custom bot key.
     *   `DATABASE_PATH`: `/app/data/bit_tracker.db`
     *   Add any optional WhatsApp configurations as desired.
 2.  **Persistent Volumes (CRITICAL):**
