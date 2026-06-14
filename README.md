@@ -1,6 +1,6 @@
 # BIT Announcement Tracker 🚀
 
-[![Live Demo](https://161.118.168.248:5000/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Click%20Here-success?style=for-the-badge)](http://161.118.168.248:5000/)
 
 A premium, comprehensive tracking and notification system designed to monitor announcements from the **Bachelor of Information Technology (BIT)** program at the **University of Colombo School of Computing (UCSC)**. It aggregates updates from multiple portals, stores them securely in a local SQLite database, broadcasts updates to a WhatsApp Channel, and renders all system activities on a real-time web dashboard.
 
