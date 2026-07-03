@@ -163,6 +163,42 @@ Create a persistent background service so the application restarts automatically
     sudo systemctl status bit-tracker
     ```
 
+### 4. Persistent WhatsApp Gateway (WAHA Setup)
+To host the WhatsApp API gateway reliably on a resource-constrained VPS (like an Always Free 1GB RAM Oracle Cloud VM), run the WAHA Docker container with:
+1. A **persistent Docker volume** (so that your WhatsApp login state survives container recreations/upgrades).
+2. The lightweight **`NOWEB` engine** (based on Baileys, which runs in Node without launching headless Chromium, saving ~500MB of RAM).
+3. A **fixed, static API key** (so you don't have to update your `.env` every time the container restarts).
+
+Run the following command on your VM to initialize WAHA:
+```bash
+sudo docker run -d \
+  --name waha \
+  -p 3000:3000 \
+  -v waha_sessions:/app/.sessions \
+  -e WAHA_API_KEY=1ab94bf58a3d4856af8a0bab60205a33 \
+  -e WHATSAPP_API_KEY=1ab94bf58a3d4856af8a0bab60205a33 \
+  -e WHATSAPP_DEFAULT_ENGINE=NOWEB \
+  --restart always \
+  devlikeapro/waha
+```
+
+### 5. Automated Daily WhatsApp Heartbeat
+To verify that your WhatsApp session remains active and isn't unlinked by WhatsApp server updates, you can automate a daily check-in message sent directly to your phone:
+
+1. Add your personal WhatsApp JID (phone number) to the `.env` file:
+   ```env
+   WHATSAPP_HEARTBEAT_TARGET=94763928333@c.us
+   ```
+2. Schedule the heartbeat script to run daily using `cron` (e.g., at 9:00 AM UTC / 2:30 PM Sri Lankan time):
+   ```bash
+   crontab -e
+   ```
+   Add the following line at the end:
+   ```text
+   0 9 * * * /home/ubuntu/BIT-Announcement-Tracker/venv/bin/python /home/ubuntu/BIT-Announcement-Tracker/send_heartbeat.py >> /home/ubuntu/BIT-Announcement-Tracker/heartbeat.log 2>&1
+   ```
+3. Logs will be written to `heartbeat.log` in the project root directory.
+
 ---
 
 ## 🌐 Live Static Dashboard
