@@ -31,21 +31,21 @@ def send_http_request(url: str, json_data: dict, headers: dict, timeout: int = 4
     """
     return requests.post(url, json=json_data, headers=headers, timeout=timeout)
 
-async def broadcast_message(message: str) -> bool:
+async def send_message(to_id: str, message: str) -> bool:
     """
-    Broadcasts the given announcement message to the configured WhatsApp Channel/Chat.
+    Sends the given message to the specified target chat/phone/channel ID.
     Includes a retry mechanism to handle transient WAHA server lag or timeouts.
     """
     if not ENABLED:
-        logger.info("WhatsApp broadcasting is disabled.")
+        logger.info("WhatsApp messaging is disabled.")
         return False
     
     if not API_URL:
-        logger.error("WhatsApp broadcast failed: WHATSAPP_API_URL is not set.")
+        logger.error("WhatsApp message failed: WHATSAPP_API_URL is not set.")
         return False
         
-    if not CHANNEL_ID:
-        logger.error("WhatsApp broadcast failed: WHATSAPP_CHANNEL_ID is not set.")
+    if not to_id:
+        logger.error("WhatsApp message failed: target ID is not set.")
         return False
 
     whatsapp_msg = format_message_for_whatsapp(message)
@@ -62,7 +62,7 @@ async def broadcast_message(message: str) -> bool:
         # WAHA (WhatsApp HTTP API) standard sendText schema
         headers["Content-Type"] = "application/json"
         payload = {
-            "chatId": CHANNEL_ID,
+            "chatId": to_id,
             "text": whatsapp_msg,
             "session": os.getenv("WHATSAPP_SESSION", "default")
         }
@@ -70,21 +70,21 @@ async def broadcast_message(message: str) -> bool:
         # Whapi.Cloud send text message schema
         headers["Content-Type"] = "application/json"
         payload = {
-            "to": CHANNEL_ID,
+            "to": to_id,
             "body": whatsapp_msg
         }
     elif PROVIDER == "wassenger":
         # Wassenger send message schema
         headers["Content-Type"] = "application/json"
         payload = {
-            "phone": CHANNEL_ID,
+            "phone": to_id,
             "message": whatsapp_msg
         }
     else:
         # Generic Custom Webhook structure
         headers["Content-Type"] = "application/json"
         payload = {
-            "to": CHANNEL_ID,
+            "to": to_id,
             "body": whatsapp_msg,
             "text": whatsapp_msg,
             "message": whatsapp_msg
@@ -94,23 +94,30 @@ async def broadcast_message(message: str) -> bool:
     retry_delay = 5
     
     for attempt in range(1, max_retries + 1):
-        logger.info(f"Dispatching announcement to WhatsApp Channel/Chat via '{PROVIDER}' (Attempt {attempt}/{max_retries})...")
+        logger.info(f"Dispatching WhatsApp message to '{to_id}' via '{PROVIDER}' (Attempt {attempt}/{max_retries})...")
         try:
             # Execute the HTTP request in a thread pool to avoid blocking the main event loop
             response = await asyncio.to_thread(send_http_request, API_URL, payload, headers, 45)
             
             if response.status_code in [200, 201, 202]:
-                logger.info("Announcement successfully broadcasted to WhatsApp!")
+                logger.info("WhatsApp message successfully sent!")
                 return True
             else:
                 logger.error(f"WhatsApp API returned error code {response.status_code} on attempt {attempt}: {response.text}")
                 
         except Exception as e:
-            logger.error(f"Failed to broadcast message on attempt {attempt} due to exception: {e}")
+            logger.error(f"Failed to send WhatsApp message on attempt {attempt} due to exception: {e}")
             
         if attempt < max_retries:
             logger.info(f"Waiting {retry_delay} seconds before retrying...")
             await asyncio.sleep(retry_delay)
             
-    logger.error("WhatsApp broadcast failed after all retries.")
+    logger.error("WhatsApp message send failed after all retries.")
     return False
+
+async def broadcast_message(message: str) -> bool:
+    """
+    Broadcasts the given announcement message to the configured WhatsApp Channel/Chat.
+    """
+    return await send_message(CHANNEL_ID, message)
+
