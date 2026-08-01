@@ -45,6 +45,11 @@ async def main():
     async def broadcast_announcement(message):
         if os.getenv("PAUSE_NOTIFICATIONS", "false").lower() == "true":
             logger.info("Broadcasting is currently PAUSED via PAUSE_NOTIFICATIONS env variable.")
+            # Redirect to monitoring target if configured
+            monitor_target = os.getenv("WHATSAPP_HEARTBEAT_TARGET")
+            if monitor_target:
+                logger.info(f"Redirecting paused announcement to monitoring target: {monitor_target}")
+                await whatsapp.send_message(monitor_target, f"⚠️ *[PAUSED MONITORING]* ⚠️\n\n{message}")
             return
         # Broadcast to WhatsApp channel (if enabled)
         await whatsapp.broadcast_message(message)
