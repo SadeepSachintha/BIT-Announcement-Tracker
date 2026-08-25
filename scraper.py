@@ -17,10 +17,13 @@ scraper_running = False
 
 def fetch_rss_feed():
     try:
-        feed = feedparser.parse(FEED_URL)
+        response = requests.get(FEED_URL, timeout=15)
+        response.raise_for_status()
+        feed = feedparser.parse(response.content)
         if feed.bozo:
-            logger.error("Error parsing feed.")
-            return []
+            logger.error(f"Error parsing feed (Bozo exception: {getattr(feed, 'bozo_exception', 'unknown')}).")
+            if not feed.entries:
+                return []
         
         results = []
         for entry in feed.entries:
